@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monthly Habit Tracker | Midnight Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #0f172a 0%, #020617 100%);
-            --accent-green: #10b981; /* Emerald 500 */
+            --accent-green: #10b981;
             --glass-bg: rgba(30, 41, 59, 0.7);
             --border-color: rgba(255, 255, 255, 0.1);
         }
@@ -24,20 +25,13 @@
 
         .serif { font-family: 'Playfair Display', serif; }
 
-        /* Smooth Entry Animations */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes pop {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
         .animate-fade-in { animation: fadeInUp 0.8s ease forwards; }
         
-        /* Glassmorphism Dark */
         .glass-card {
             background: var(--glass-bg);
             backdrop-filter: blur(16px);
@@ -45,23 +39,19 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        /* Tactile Dark Cells */
         .habit-cell {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             border-color: rgba(255, 255, 255, 0.05) !important;
         }
+
         .habit-cell:hover {
-            transform: scale(1.15);
             background-color: rgba(255, 255, 255, 0.05);
-            z-index: 10;
         }
 
         .cell-active { 
             background-color: var(--accent-green) !important; 
             color: #ffffff; 
-            transform: scale(1.05);
             box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
-            border: none !important;
         }
 
         /* Staggered Row Animation */
@@ -77,23 +67,12 @@
         tbody tr:nth-child(9) { animation-delay: 0.5s; }
         tbody tr:nth-child(10) { animation-delay: 0.55s; }
 
-        .graph-point { 
-            background-color: #f1f5f9; 
-            color: #020617; 
-            border-radius: 50%; 
-            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-        }
-
         input { font-style: italic; transition: all 0.3s; color: #f1f5f9; }
-        input::placeholder { color: #475569; }
-        input:focus { border-color: var(--accent-green); }
+        input::placeholder { color: #475569; font-style: italic; }
+        input:focus { border-color: var(--accent-green); outline: none; }
 
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        @media print { 
-            .no-print { display: none; } 
-            body { background: white; color: black; }
-        }
+        @media print { .no-print { display: none; } body { background: white; color: black; } }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -116,11 +95,11 @@
             <div class="flex flex-col md:flex-row justify-center gap-8 md:gap-20">
                 <div class="border-b-2 border-slate-700 focus-within:border-emerald-500 transition-all pb-2 text-left">
                     <label class="uppercase text-[9px] tracking-[0.3em] text-slate-500 font-black block mb-1">Practitioner</label>
-                    <input type="text" id="userName" class="bg-transparent outline-none w-56 py-1 italic text-xl font-light tracking-wide" placeholder="Your Name">
+                    <input type="text" id="userName" class="bg-transparent w-56 py-1 italic text-xl font-light" placeholder="Your Name">
                 </div>
                 <div class="border-b-2 border-slate-700 focus-within:border-emerald-500 transition-all pb-2 text-left">
                     <label class="uppercase text-[9px] tracking-[0.3em] text-slate-500 font-black block mb-1">Timeframe</label>
-                    <input type="text" id="trackerMonth" class="bg-transparent outline-none w-56 py-1 italic text-xl font-light tracking-wide" placeholder="Current Month">
+                    <input type="text" id="trackerMonth" class="bg-transparent w-56 py-1 italic text-xl font-light" placeholder="Current Month">
                 </div>
             </div>
         </header>
@@ -143,30 +122,17 @@
 
         <div class="mt-24">
             <div class="mb-10 text-center md:text-left">
-                <h3 class="serif text-3xl italic text-slate-100">Consistency Graph</h3>
+                <h3 class="serif text-3xl italic text-slate-100">Consistency Trend</h3>
                 <div class="h-1 w-20 bg-emerald-500/30 mt-4 mx-auto md:mx-0"></div>
             </div>
-            
-            <div class="overflow-x-auto hide-scrollbar bg-slate-950/40 rounded-2xl p-6 border border-slate-800">
-                <table class="w-full border-collapse text-xs">
-                    <tbody id="graphBody"></tbody>
-                    <tfoot>
-                        <tr>
-                            <td class="p-4 font-black uppercase text-slate-600 text-center text-[9px] tracking-widest">Day</td>
-                            <script>
-                                for(let i=1; i<=31; i++) {
-                                    document.write(`<td class="w-10 h-10 text-center text-slate-500 font-bold">${i}</td>`);
-                                }
-                            </script>
-                        </tr>
-                    </tfoot>
-                </table>
+            <div class="bg-slate-950/40 rounded-2xl p-6 border border-slate-800 shadow-2xl">
+                <canvas id="habitChart" style="width:100%; max-height:400px;"></canvas>
             </div>
         </div>
 
         <footer class="mt-24 border-t border-slate-800 pt-12 flex flex-col md:flex-row justify-between items-center gap-10">
-            <div class="text-center md:text-left group">
-                <p id="footerQuote" class="serif italic text-2xl text-slate-400 transition-all group-hover:text-emerald-400">“Success is the product of daily habits.”</p>
+            <div class="text-center md:text-left">
+                <p id="footerQuote" class="serif italic text-2xl text-slate-400 group-hover:text-emerald-400 transition-all">“Success is the product of daily habits.”</p>
                 <p class="text-slate-600 text-[10px] mt-4 uppercase tracking-[0.4em] font-bold">— The Compound Effect</p>
             </div>
             <div class="flex gap-6 no-print">
@@ -191,6 +157,7 @@
         const habitCount = 10;
         const daysInMonth = 31;
         let habitData = JSON.parse(localStorage.getItem('habitData')) || {};
+        let habitChart;
 
         function showRandomQuote() {
             const quote = quotes[Math.floor(Math.random() * quotes.length)];
@@ -202,9 +169,7 @@
             document.getElementById('splashScreen').style.opacity = '0';
             document.getElementById('mainContent').style.opacity = '1';
             document.getElementById('mainContent').style.transform = 'translateY(0)';
-            setTimeout(() => {
-                document.getElementById('splashScreen').style.display = 'none';
-            }, 1000);
+            setTimeout(() => { document.getElementById('splashScreen').style.display = 'none'; }, 1000);
         }
 
         const habitBody = document.getElementById('habitBody');
@@ -212,8 +177,8 @@
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="border-b border-r border-slate-800 p-0 bg-slate-900/30">
-                    <input type="text" class="w-full p-6 outline-none habit-name bg-transparent font-medium italic text-slate-200 placeholder:text-slate-700" 
-                           placeholder="Type habit..." data-habit-index="${i}" 
+                    <input type="text" class="w-full p-6 bg-transparent italic text-slate-200" 
+                           placeholder="Type protocol..." data-habit-index="${i}" 
                            value="${habitData[`name_${i}`] || ''}">
                 </td>
                 ${Array.from({length: 31}, (_, d) => `
@@ -227,31 +192,44 @@
         }
 
         function updateGraph() {
-            const graphBody = document.getElementById('graphBody');
-            graphBody.innerHTML = '';
-            const dailyScores = {};
+            const dailyScores = [];
+            const labels = [];
             for (let d = 1; d <= daysInMonth; d++) {
                 let score = 0;
                 for (let h = 0; h < habitCount; h++) {
                     if (habitData[`${h}-${d}`]) score++;
                 }
-                dailyScores[d] = score;
+                dailyScores.push(score);
+                labels.push(d);
             }
 
-            for (let s = 10; s >= 1; s--) {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="w-16 text-center text-[10px] font-black text-slate-700 border-r border-slate-800">${s}</td>
-                    ${Array.from({length: 31}, (_, d) => {
-                        const day = d + 1;
-                        const isActive = dailyScores[day] === s;
-                        return `<td class="w-10 h-10 text-center ${isActive ? 'flex items-center justify-center' : ''}">
-                                    ${isActive ? '<div class="graph-point w-6 h-6 flex items-center justify-center text-[8px] font-bold">●</div>' : ''}
-                                </td>`;
-                    }).join('')}
-                `;
-                graphBody.appendChild(row);
-            }
+            const ctx = document.getElementById('habitChart').getContext('2d');
+            if (habitChart) { habitChart.destroy(); }
+
+            habitChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dailyScores,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, max: 10, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                    }
+                }
+            });
         }
 
         habitBody.addEventListener('click', (e) => {
@@ -273,7 +251,7 @@
         });
 
         habitBody.addEventListener('input', (e) => {
-            if (e.target.classList.contains('habit-name')) {
+            if (e.target.dataset.habitIndex !== undefined) {
                 habitData[`name_${e.target.dataset.habitIndex}`] = e.target.value;
                 saveData();
             }
@@ -285,10 +263,7 @@
         }
 
         function resetTracker() {
-            if(confirm("Erase all data? This cannot be undone.")) {
-                localStorage.clear();
-                location.reload();
-            }
+            if(confirm("Erase all data?")) { localStorage.clear(); location.reload(); }
         }
 
         window.onload = () => {
